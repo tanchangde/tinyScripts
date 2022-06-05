@@ -11,14 +11,14 @@
  
 # 加载必要 package
 
-pkgsToLoad = c("readr","stringr","dplyr","purrr","RCurl","magrittr","jsonlite", "fs")
+pkgsToLoad = c("readr", "stringr", "dplyr", "purrr", "RCurl", "magrittr", "jsonlite", "fs")
 pkgsToInstall <- pkgsToLoad[!pkgsToLoad %in% installed.packages()]
 
 if( length(pkgsToInstall) > 0){
 	for(lib in pkgsToInstall) install.packages(lib)
 }
 
-sapply(pkgsToLoad, require,  character.only=TRUE)
+sapply(pkgsToLoad, require, character.only=TRUE)
 
 # 构造接口查询函数
 
@@ -26,15 +26,17 @@ getAltmetricScore <- function(doi, api = "https://api.altmetric.com/v1/doi/") {
 	sleepTime <-  runif(n= 1, min = 0, max = 1)
 	cat("\n[🐶友好调用] 划水 ", round(sleepTime, digits = 2), " 秒")
 	Sys.sleep(sleepTime)
-	cat("\n[🔍开始查询]", doi, "的 Altmetric Score...\n[🍒查询结果] ")
+	cat("\n[🔍开始查询]", doi, "的 Altmetric Score...")
 	tryCatch({
 	score <- httpGET(paste0(api,doi)) %>% 
 			parse_json() %>% 
 			extract2("score")
+	cat("\n[🍒查询结果] ")
 	cat(format(score), fill = getOption("width"))
 	invisible(score)
 	},error = function(e) {
-		cat("未匹配到")
+		cat("\n[🍒查询结果] ")
+		cat("未匹配到\n")
 		invisible("")
 	}
 	)
@@ -69,11 +71,13 @@ if (length(toQuery) > 0){
 		tmpFileName <- paste0((str_extract_all(string = doiNum, pattern = "\\w")) [[1]],collapse = "")
 		write.csv(tmpTable,file = paste0(pathToResult,"/", tmpFileName,".csv"), row.names = FALSE, na = "")
 		cat("\n查询结果已保存。\n")
-	}} else {
-		cat("\n🎉恭喜，你已完成所有条目查询！")
 	}
-
-updateQuery <- dir_ls(pathToResult) %>%  # 遍历结果文件夹文件并合并
-	map_dfr(read_csv, show_col_types = FALSE) %>% 
-	distinct()
-write.csv(updateQuery, file = paste0(getwd(),"/","queryResult.csv"), row.names = FALSE, na = "")
+	updateQuery <- dir_ls(pathToResult) %>%  # 遍历结果文件夹文件并合并
+		map_dfr(read_csv, show_col_types = FALSE) %>% 
+		distinct() %>% 
+		rename(DOI = doiNum,AltmetricScore = tmpResult) %>% 
+		select(DOI, AltmetricScore)
+	write.csv(updateQuery, file = paste0(getwd(),"/","queryResult.csv"), row.names = FALSE, na = "")
+	} else {
+		cat("\n🎉恭喜，你已完成所有条目查询！")
+		}
