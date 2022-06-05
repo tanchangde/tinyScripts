@@ -1,32 +1,72 @@
 # 此脚本用于通过文献 DOI 批量查询 Altmetric Score
-# 运行该脚本前，请将需要查询的 DOI 参考 sample 文件结构组织
-# 待查询文件，请自行重命名并放置在与脚本统一路径下，或修改读入文件路径
-# 查询结果保存到当前脚本运行目录下的 “result.csv” 文件，未查询到的将留空。
+# 运行该脚本前，请将需要查询的 DOI 置换 toQuery.csv 文件中的 DOI 条目
+# toQuery.csv 文件在请放置到当前 R 会话到工作目录下
+# 当前 R 会话工作目录可通过在控制台运行 getwd() 函数明确
+# 查询结果保存到当前脚本运行工作目录下的 queryResult.csv 文件，未查询到的将留空
+# 若控制台提示查询超时（Timed out 字样），大概率是当前 IP 被识别频繁查询
+# 请利用三方工具切换全局 IP 再次运行脚本查询，直至顺利查完不再提醒超时
+# 本脚本支持中断后与新增 DOI 增量查询
+# 即无需因中断重查之前查询过的结果，如确有需要重新查询，请删除 queryResult 文件夹 再次运行该脚本
+# 运行脚本前，请确保已保存并关闭 toQuery.csv
+ 
+# 加载必要 package
 
-if(!isTRUE(require("readr"))){install.packages("readr")}
-if(!isTRUE(require("stringr"))){install.packages("stringr")}
-if(!isTRUE(require("dplyr"))){install.packages("dplyr")}
-if(!isTRUE(require("RCurl"))){install.packages("RCurl")}
-if(!isTRUE(require("magrittr"))){install.packages("magrittr")}
-if(!isTRUE(require("jsonlite"))){install.packages("jsonlite")}
-library(readr)
-library(stringr)
-library(dplyr)
-library(magrittr)
-library(RCurl)
-library(jsonlite)
+pkgsToLoad = c("readr","stringr","dplyr","purrr","RCurl","magrittr","jsonlite", "fs")
+pkgsToInstall <- pkgsToLoad[!pkgsToLoad %in% installed.packages()]
 
-getAltmetricScore <- function(doi, api = "https://api.altmetric.com/v1/doi/") {
-	Sys.sleep(runif(n= 1, min = 0, max = 1))
-	httpGET(paste0(api,doi)) %>% 
-		parse_json() %>% 
-		extract2("score")
+if( length(pkgsToInstall) > 0){
+	for(lib in pkgsToInstall) install.packages(lib)
 }
 
-toWrite <- readr::read_csv("sample.csv") %>% # 如想测试脚本，可以减少 sample 文件查询个数到个位数
-	mutate(AltmetricScore = lapply(.[[1]], function(z) try(getAltmetricScore(z)))) %>% 
-	mutate(AltmetricScore = str_replace(AltmetricScore,"Error : ",replacement = ""))
+sapply(pkgsToLoad, require,  character.only=TRUE)
 
-write.csv(toWrite,"result.csv",na = "")
+# 构造接口查询函数
 
+getAltmetricScore <- function(doi, api = "https://api.altmetric.com/v1/doi/") {
+	sleepTime <-  runif(n= 1, min = 0, max = 1)
+	cat("\n[🐶友好调用] 划水 ", round(sleepTime, digits = 2), " 秒")
+	Sys.sleep(sleepTime)
+	cat("\n[🔍开始查询]", doi, "的 Altmetric Score...\n[🍒查询结果] ")
+	tryCatch({
+	score <- httpGET(paste0(api,doi)) %>% 
+			parse_json() %>% 
+			extract2("score")
+	cat(format(score), fill = getOption("width"))
+	invisible(score)
+	},error = function(e) {
+		cat("未匹配到")
+		invisible("")
+	}
+	)
+}
 
+# 创建查询结果文件夹
+
+pathToResult <- paste0(getwd(),"/queryResult")
+cat("查询结果将保存至", pathToResult)
+
+if (!"queryResult" %in% dir_ls() | length(dir_ls(pathToResult)) == 0) {
+	dir_create(path = "queryResult")
+	toQuery <- readr::read_csv("toQuery.csv", show_col_types = FALSE) %>% 
+		extract2(1)
+} else {
+	historyQuery <- dir_ls(pathToResult) %>%  # 遍历结果文件夹文件并合并
+		map_dfr(read_csv, show_col_types = FALSE) %>% 
+		distinct()
+	write.csv(historyQuery,file = paste0(getwd(),"/","historyQuery.csv"), row.names = FALSE, na = "")
+	toQuery <- readr::read_csv("toQuery.csv", show_col_types = FALSE) %>% 
+		left_join(historyQuery, by = c("DOI" = "doiNum")) %>% 
+		filter(is.na(isQuery)) %>% # 剔除已查询条目
+		extract2(1)
+}
+
+if (length(toQuery) > 1){
+	for (doiNum in toQuery) {
+		tmpResult <-  getAltmetricScore(doi = doiNum)
+		tmpTable <- tibble(doiNum, tmpResult, isQuery = 1)
+		tmpFileName <- paste0((str_extract_all(string = doiNum, pattern = "\\w")) [[1]],collapse = "")
+		write.csv(tmpTable,file = paste0(pathToResult,"/", tmpFileName,".csv"), row.names = FALSE, na = "")
+		cat("\n查询结果已保存。\n")
+	}} else {
+		cat("\n🎉恭喜，你已完成所有条目查询！")
+	}
