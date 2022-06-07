@@ -1,17 +1,17 @@
 # 此脚本用于通过文献 DOI 批量查询 Altmetric Score
 # 运行该脚本前，请将需要查询的 DOI 置换 toQuery.csv 文件中的 DOI 条目
-# toQuery.csv 文件在请放置到当前 R 会话到工作目录下
+# toQuery.csv 文件在请放置到当前 R 会话工作目录下
 # 当前 R 会话工作目录可通过在控制台运行 getwd() 函数明确
-# 若控制台提示查询超时（Timed out 字样），大概率是当前 IP 被识别频繁查询
+# 若控制台提示查询超时（"...Timed out" 字样），有可能是当前 IP 被识别频繁查询
 # 请利用三方工具切换全局 IP 再次运行脚本查询，直至提示“🎉恭喜，你已完成所有条目查询！”
-# 本脚本支持中断后与新增 DOI 增量查询
-# 即无需因中断重查之前查询过的结果，如确有需要重新查询，请删除 queryResult 文件夹 再次运行该脚本
+# 支持中断续查与新增 DOI 查询
+# 无需因中断重查之前查询过的结果，如确有需要重新查询，请删除 queryResult 文件夹或需要重查结果文件，再次运行该脚本
 # 运行脚本前，请确保已保存并关闭 toQuery.csv
-# 查询结果将合并保存到当前脚本运行工作目录下的 queryResult.csv 文件，未查询到的将留空
+# 全部待查结果查询完毕后，结果将合并保存到当前脚本运行工作目录下的 queryResult.csv 文件，未查询到的将留空
 
 # 加载必要 package
 
-pkgsToLoad = c("readr", "stringr", "dplyr", "purrr", "RCurl", "magrittr", "jsonlite", "fs")
+pkgsToLoad <- c("readr", "stringr", "dplyr", "purrr", "RCurl", "magrittr", "jsonlite", "fs")
 pkgsToInstall <- pkgsToLoad[!pkgsToLoad %in% installed.packages()]
 
 if(length(pkgsToInstall) > 0){
@@ -42,7 +42,7 @@ getAltmetricScore <- function(doi, api = "https://api.altmetric.com/v1/doi/") {
 	)
 }
 
-# 创建查询结果文件夹
+# 创建查询结果文件夹&读取需查询条目
 
 pathToResult <- paste0(getwd(), "/queryResult")
 cat("查询结果将保存至", pathToResult)
@@ -63,6 +63,8 @@ if (!"queryResult" %in% dir_ls()) {
 		filter(is.na(isQuery) | tmpResult == "Failed to connect to api.altmetric.com port 443: Operation timed out") %>% # 剔除已查询条目&增补查询超时条目
 		extract2(1)
 }
+
+# 查询&合并结果并保存
 
 if (length(toQuery) > 0){
 	for (doiNum in toQuery) {
