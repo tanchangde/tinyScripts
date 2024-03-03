@@ -68,8 +68,10 @@ if (!"queryResult" %in% dir_ls()) {
     extract2(1)
 } else {
   historyQuery <- dir_ls(pathToResult) %>% # 遍历结果文件夹文件并合并
-    map_dfr(read_csv, show_col_types = FALSE, col_types = cols(.default = "c")) %>%
+    map_dfr(
+      read_csv, show_col_types = FALSE, col_types = cols(.default = "c")) %>%
     distinct()
+
   toQuery <- read_csv("toQuery.csv", show_col_types = FALSE) %>%
     left_join(historyQuery, by = c("DOI" = "doiNum")) %>%
     filter(
