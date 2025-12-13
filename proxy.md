@@ -1,4 +1,4 @@
-# 通用终端代理设置脚本 (Windows Git Bash / macOS)
+# 通用终端代理设置指引 (Windows Git Bash / macOS)
 
 ### 脚本说明
 
