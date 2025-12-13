@@ -1,6 +1,6 @@
 # 通用终端代理设置指引 (Windows Git Bash / macOS)
 
-> 由 Gemini 3 Pro 辅助生成
+> 由 Gemini 3 Pro 辅助生成并人工测试
 
 ### 脚本说明
 
