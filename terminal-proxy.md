@@ -73,6 +73,7 @@ function proxy() {
 proxy 
 
 # --- [3. 关闭代理函数] ---
+# 使用方法: 在终端直接输入 unproxy
 function unproxy() {
     unset http_proxy
     unset https_proxy
@@ -90,12 +91,24 @@ function unproxy() {
 
 #### 场景 A：Windows (Git Bash)
 
-1.  **打开配置文件**：
-    在 Git Bash 窗口中输入：`notepad ~/.bashrc`
-2.  **粘贴代码**：
-    将第一部分的脚本粘贴到文件末尾。**务必确认端口号是否正确**。
-3.  **生效配置**：
-    保存关闭记事本，然后在终端运行：`source ~/.bashrc`
+Windows Git Bash 默认不会自动加载 `~/.bashrc`，但你可以直接将脚本放到 `~/.bash_profile` 中（推荐简化方法），因为 Git Bash 启动时会自动加载 `~/.bash_profile`。
+
+**步骤 1：配置 `.bash_profile`**
+
+在终端执行以下命令创建或编辑引导文件：
+```bash
+notepad ~/.bash_profile
+```
+在打开的记事本中，直接粘贴**脚本代码**部分的所有内容（注意修改 `PROXY_PORT` 端口号）。
+保存并关闭文件。
+
+**步骤 2：生效与验证**
+关闭所有 Git Bash 窗口并重新打开（或者执行 `source ~/.bash_profile`）。
+
+*   输入 `proxy` -> 开启代理并测试。
+*   输入 `unproxy` -> 关闭代理。
+
+**可选兼容方法**：如果需要与 macOS/Linux 保持一致，可以先将脚本放到 `~/.bashrc`，然后在 `~/.bash_profile` 中添加 `if [ -f ~/.bashrc ]; then source ~/.bashrc; fi` 来加载。
 
 #### 场景 B：macOS (默认终端 / iTerm2)
 
