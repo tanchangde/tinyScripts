@@ -1,0 +1,18 @@
+<!-- 可正常渲染中文 PDF 的 Quarto 模板，使用 XeLaTeX + ctexart + 思源宋体 -->
+---
+title: "标题"
+author: "作者"
+date: "YYYY-MM-DD"
+format:
+  pdf:
+    pdf-engine: xelatex
+    documentclass: ctexart
+    CJKmainfont: "SourceHanSerifCN-Regular"
+    include-in-header:
+      - text: |
+          \usepackage[a4paper, left=2.5cm, right=2.5cm, top=2.54cm, bottom=2.54cm]{geometry}
+          \linespread{1.5}             % 1.5倍行距，阅读更舒适
+          \setlength{\parindent}{2em}  % 段落缩进
+---
+
+正文内容从这里开始。
